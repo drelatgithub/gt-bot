@@ -58,8 +58,21 @@ async def group(session: CommandSession):
     await session.send(answerMessage)
     return
 
+# Remove a user from file. 
+@on_command('不打了', aliases=('我不打了', '我不等了', '我先开了', '下次再打'))
+async def remove_user(session: CommandSession):
+    check_dir()
+    currentIds = qqIdsInFile()
+    event = session.event.copy()
+    userid = event['sender']['user_id']
+
+    if userid in currentIds:
+        remove_user(userid)
+    
+    await session.send('okay，那就下次再打吧')
+
 # Checks the current status. 
-@on_command('查询合作', aliases=('查询合作模式', '查询组队', '当前合作', '几个人啊','现在几个人啊'))
+@on_command('查询合作', aliases=('查询合作模式', '查询组队', '当前合作', '几个人啊','现在几个人啊','人够不够了'))
 async def search_group(session: CommandSession):
     check_dir()
 
@@ -71,7 +84,7 @@ async def search_group(session: CommandSession):
     await session.send('现在有: {}'.format(current_team))
 
 # Checks the current co-op date. If it doesn't exists, returns error messages which requires to set date. 
-@on_command('合作时间', aliases=('合作开始时间','合作模式开始时间','这次合作模式'))
+@on_command('合作时间', aliases=('合作开始时间','合作模式开始时间','这次合作模式', '合作开了吗'))
 async def date(session: CommandSession) -> str:
     check_dir()
     inputDate = None
@@ -147,6 +160,15 @@ def existing_date():
                 return string_to_date_translator(dateRange[6:])
             except ValueError:
                 return None 
+
+# Remove a line with certain pattern.
+def remove_lines(identifier):
+    with open(FILE_NAME, newline='') as f:
+        rows = f.read().splitlines()
+    with open(FILE_NAME, "w") as f:
+        for row in rows:
+            if identifier not in row:
+                f.write(line)
 
 # Returns the existing people in the file.
 def waitlist_user(pingUser = False):
