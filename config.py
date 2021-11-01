@@ -9,3 +9,4 @@ HOST = "127.0.0.1"
 PORT = 3000
 
 DATA_DIR = path.join(path.dirname(__file__), '../gt-bot-data')
+INTERNAL_DATA_DIR = path.join(path.dirname(__file__), './gt-bot-data')
