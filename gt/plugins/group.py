@@ -14,7 +14,7 @@ FILE_NAME = os.path.join(config.DATA_DIR, 'group', 'current_list.txt')
 TIME_ZONE = timezone('Asia/Shanghai')
 
 # Adds the user into the waitlist. 
-@on_command('group', aliases=('组队', '合作模式', '带我一个', '想打合作了'))
+@on_command('group', aliases=('组队', '合作模式', '带我一个', '想打合作了'), only_to_me=False)
 async def group(session: CommandSession):
     check_dir()
     dateInFile = existing_date()
@@ -69,7 +69,7 @@ async def group(session: CommandSession):
     return
 
 # Remove a user from file. 
-@on_command('不打了', aliases=('我不打了', '不等了', '我先开了', '下次再打', '先开了'))
+@on_command('不打了', aliases=('我不打了', '不等了', '我先开了', '下次再打', '先开了'), only_to_me=False)
 async def remove_user(session: CommandSession):
     check_dir()
     currentIds = qqIdsInFile()
@@ -82,7 +82,7 @@ async def remove_user(session: CommandSession):
     await session.send('okay，那就下次再打吧')
 
 # Checks the current status. 
-@on_command('查询合作', aliases=('查询合作模式', '查询组队', '当前合作', '几个人啊','现在几个人啊','人够不够了', '几个人'))
+@on_command('查询合作', aliases=('查询合作模式', '查询组队', '当前合作', '几个人啊','现在几个人啊','人够不够了', '几个人'), only_to_me=False)
 async def search_group(session: CommandSession):
     check_dir()
 
@@ -94,7 +94,7 @@ async def search_group(session: CommandSession):
     await session.send('现在有: {}'.format(current_team))
 
 # Checks the current co-op date. If it doesn't exists, returns error messages which requires to set date. 
-@on_command('合作时间', aliases=('合作开始时间','合作模式开始时间','这次合作模式', '合作开了吗'))
+@on_command('合作时间', aliases=('合作开始时间','合作模式开始时间','这次合作模式', '合作开了吗'), only_to_me=False)
 async def date(session: CommandSession) -> str:
     check_dir()
     inputDate = None
