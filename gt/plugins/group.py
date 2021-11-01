@@ -53,7 +53,10 @@ async def group(session: CommandSession):
         # Cleans up the file if there is enough people. 
         clean_up_file(True)
     else:
-        answerMessage = '人还不够，现在{}在等'.format(waitlist_user())
+        if len(qqIdsInFile()) == 1:
+            answerMessage = 'okay，你是第一个哦~'
+        else:
+            answerMessage = '人还不够，现在{}在等'.format(waitlist_user())
     
     await session.send(answerMessage)
     return
@@ -103,7 +106,7 @@ async def date(session: CommandSession) -> str:
 
     # User input doesn't contains date, assume the user wants to check the start date. 
     if inputDate is None and dateInFile is not None:
-        await session.send('合作{}开始'.format(date_to_string_translator(dateInFile)))
+        await session.send('合作{}开始'.format(date_to_string_translator(dateInFile, True)))
     elif inputDate is None and dateInFile is None:
         await session.send('俺也不知道合作啥时候开始')
     elif inputDate is not None:
