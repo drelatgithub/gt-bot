@@ -17,11 +17,17 @@ TIME_ZONE = timezone('Asia/Shanghai')
 async def group(session: CommandSession):
     check_dir()
     dateInFile = existing_date()
+    coopTimeRange = datetime.timedelta(days = 14)
 
-    if dateInFile is None or dateInFile > current_time():
+    # Checks if the coop date exists or if the current date is not valid anymore. 
+    if dateInFile is None or dateInFile > current_time() or (dateInFile + coopTimeRange) < current_time()  :
         dateInFileString = '上次啥时候忘了'
         if dateInFile is not None:
-            dateInFileString = '上次时间是{}'.format(date_to_string_translator(dateInFile, True))
+            if dateInFile > current_time():
+                dateInFileString = '下次时间是{}'.format(date_to_string_translator(dateInFile, True))
+            else:
+                dateInFileString = '上次已经是{}'.format(date_to_string_translator(dateInFile, True))
+            
         currentTimeString = date_to_string_translator(current_time(), True)
         await session.send('合作还没开吧, 现在时间是{}，{}'.format(currentTimeString, dateInFileString))
         return
