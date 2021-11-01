@@ -37,6 +37,17 @@ def get_chara_png_file(filename):
 
     return fullname
 
+def get_rank_png_file(rank:int):
+    if rank < 1 or rank > 3:
+        raise Exception(f"Rank {rank} is not in range [1, 3].")
+
+    filename = f'Rank{rank}_{rank}'
+    fullname = path.join(PNG_FILE_DIR, filename + '.png')
+    if not path.isfile(fullname):
+        os.makedirs(PNG_FILE_DIR, exist_ok=True)
+        with open(fullname, 'wb') as f:
+            f.write(find_png_in_biliwiki(filename))
+    return fullname
 
 def push_image_send_queue(im):
     global image_send_queue_id

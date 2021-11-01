@@ -24,16 +24,23 @@ def get_chara_thumbnail(chara_id):
     png_name = chara_name + "单个模型"
     return Image.open(resource.get_chara_png_file(png_name))
 
-def get_chara_thumbnails(chara_ids, nres_line=5):
+def get_rank_thumbnail(rank:int):
+    return Image.open(resource.get_rank_png_file(rank))
+
+def combine_chara_thumbnails_with_rank(chara_ids, nres_line=5):
     ims = [get_chara_thumbnail(chara_id) for chara_id in chara_ids]
+    ims_rank = [get_rank_thumbnail(rank) for rank in range(1, 4)]
 
     max_width = max(im.width for im in ims)
+    rank_scale = max_width / ims_rank[0].width
+    ims_rank = [im.resize((int(im.width * rank_scale), int(im.height * rank_scale))) for im in ims_rank]
+    rank_height = ims_rank[0].height
 
     tot_height = 0
     for i in range(0, len(ims), nres_line):
         im_range = ims[i:i+nres_line]
         max_height = max(im.height for im in im_range)
-        tot_height += max_height
+        tot_height += max_height + rank_height
 
     res = Image.new('RGBA', (max_width * nres_line, tot_height), (225, 0, 0, 0))
     y = 0
@@ -41,8 +48,11 @@ def get_chara_thumbnails(chara_ids, nres_line=5):
         im_range = ims[i:i+nres_line]
         max_height = max(im.height for im in im_range)
         for j in range(len(im_range)):
+            chara_rank = CHARA_INFO[CHARA_INFO.name == chara_ids[i+j]].initstar.values[0]
             im = im_range[j]
+            im_rank = ims_rank[chara_rank-1]
             res.paste(im, (j * max_width, y))
-        y += max_height
+            res.paste(im_rank, (j * max_width, y + max_height))
+        y += max_height + rank_height
 
     return res

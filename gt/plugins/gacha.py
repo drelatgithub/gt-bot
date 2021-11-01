@@ -55,7 +55,7 @@ def create_default_pool(server, fei_factor=0.5, mei_factor=0.5, knight_male_fact
 @on_command('十连', only_to_me=False)
 async def gacha_10(session: CommandSession):
     res = do_gacha_10(session.event['user_id'], 'cn')
-    res_img = chara.get_chara_thumbnails(res)
+    res_img = chara.combine_chara_thumbnails_with_rank(res)
 
     img_name = resource.push_image_send_queue(res_img)
     img_url = "file://" + Path(path.join(resource.IMAGE_SEND_QUEUE_CACHE_MNT_DIR, img_name)).as_posix()
@@ -64,8 +64,9 @@ async def gacha_10(session: CommandSession):
     logger.info(f"{seg}")
     await session.send(seg)
 
-    # res_str = '、'.join(res)
-    # await session.send(f'抽个屁啊，抽到了{res_str}')
+@on_command('抽一井', only_to_me=False)
+async def gacha_10(session: CommandSession):
+    await session.send('不抽')
 
 
 def do_gacha_n(pool, n):
