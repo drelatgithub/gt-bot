@@ -1,9 +1,15 @@
+import os
+from os import path
+from pathlib import Path
 import random
 
 from nonebot import on_command, CommandSession
+from nonebot.log import logger
+from aiocqhttp import MessageSegment
 
 import config
 import gt.utilities.chara as chara
+import gt.utilities.resource as resource
 
 # Pool is a dictionary: name -> weight (probability)
 def create_default_pool(server, fei_factor=0.5, mei_factor=0.5, knight_male_factor=0.5, knight_female_factor=0.5, guarantee_2star=False):
@@ -49,8 +55,17 @@ def create_default_pool(server, fei_factor=0.5, mei_factor=0.5, knight_male_fact
 @on_command('十连', only_to_me=False)
 async def gacha_10(session: CommandSession):
     res = do_gacha_10(session.event['user_id'], 'cn')
-    res_str = '、'.join(res)
-    await session.send(f'抽个屁啊，抽到了{res_str}')
+    res_img = chara.get_chara_thumbnails(res)
+
+    img_name = resource.push_image_send_queue(res_img)
+    img_url = "file://" + Path(path.join(resource.IMAGE_SEND_QUEUE_CACHE_MNT_DIR, img_name)).as_posix()
+    seg = MessageSegment.image(img_url)
+    logger.info(f"{img_url}")
+    logger.info(f"{seg}")
+    await session.send(seg)
+
+    # res_str = '、'.join(res)
+    # await session.send(f'抽个屁啊，抽到了{res_str}')
 
 
 def do_gacha_n(pool, n):
