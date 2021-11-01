@@ -182,13 +182,13 @@ def waitlist_user(pingUser = False):
 
 # Returns the string required to @ someone. 
 def at_user(qqId):
-    return '[CQ:at,qq={}]'.format(qqId)
+    return '[CQ:at,qq={}]'.format(qqId.strip())
 
 # Returns the ids existing in the current file. 
 def qqIdsInFile():
     with open(FILE_NAME, newline='') as f:
         rows = f.read().splitlines()
-    return [rows[i].split(',')[1] for i in range(1, len(rows))]
+    return [rows[i].split(',')[1].strip() for i in range(1, len(rows))]
 
 # Write contents in the csv file 
 def write_to_file(content):
