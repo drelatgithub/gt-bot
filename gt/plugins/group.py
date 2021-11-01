@@ -45,7 +45,7 @@ async def group(session: CommandSession):
         for row in rows:
             if row.startswith('date: '):
                 continue
-            answerMessage = '人够了！gogogo！@' + ', @'.join(row)
+            answerMessage = '人够了！gogogo！'
         # Cleans up the file if there is enough people. 
         clean_up_file(True)
     else:
