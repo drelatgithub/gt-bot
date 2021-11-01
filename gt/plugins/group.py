@@ -34,7 +34,10 @@ async def group(session: CommandSession):
     userid = event['sender']['user_id']
 
     if userid in currentIds:
-        await session.send('{} 你已经在里面了，现在有{}'.format(username, waitlist))
+        if len(currentIds) == 1:
+            await session.send('{} 你已经在里面了，现在只有你'.format(username))
+            return
+        await session.send('{} 你已经在里面了，现在有{}'.format(username, waitlist_user()))
         return 
 
     write_to_file(', '.join([username, userid]))
@@ -163,7 +166,7 @@ def at_user(qqId):
 def qqIdsInFile():
     with open(FILE_NAME, newline='') as f:
         rows = f.read().splitlines()
-    return ', '.join([rows[i].split(',')[1] for i in range(1, len(rows))])
+    return [rows[i].split(',')[1] for i in range(1, len(rows))]
 
 # Write contents in the csv file 
 def write_to_file(content):
