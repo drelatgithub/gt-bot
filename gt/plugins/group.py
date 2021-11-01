@@ -31,7 +31,7 @@ async def group(session: CommandSession):
     # Adds the sender to the waiting list if the user is not there. 
     currentIds = qqIdsInFile()
     username = event['sender']['nickname']
-    userid = event['sender']['user_id']
+    userid = str(event['sender']['user_id'])
 
     if userid in currentIds:
         if len(currentIds) == 1:
@@ -64,7 +64,7 @@ async def remove_user(session: CommandSession):
     check_dir()
     currentIds = qqIdsInFile()
     event = session.event.copy()
-    userid = event['sender']['user_id']
+    userid = str(event['sender']['user_id'])
 
     if userid in currentIds:
         remove_user(userid)
@@ -168,7 +168,7 @@ def remove_lines(identifier):
     with open(FILE_NAME, "w") as f:
         for row in rows:
             if identifier not in row:
-                f.write(line)
+                f.write(row)
 
 # Returns the existing people in the file.
 def waitlist_user(pingUser = False):
