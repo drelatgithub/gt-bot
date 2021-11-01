@@ -67,7 +67,7 @@ async def remove_user(session: CommandSession):
     userid = str(event['sender']['user_id'])
 
     if userid in currentIds:
-        remove_user(userid)
+        remove_lines(userid)
     
     await session.send('okay，那就下次再打吧')
 
