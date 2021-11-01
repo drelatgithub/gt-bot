@@ -19,6 +19,9 @@ CHARA_SERVER_FILE = path.join(config.INTERNAL_DATA_DIR, 'list', 'charaserver.jso
 with open(CHARA_SERVER_FILE, 'r', encoding='utf-8') as f:
     CHARA_SERVER = json.load(f)
 
+def get_chara_rank(chara_id):
+    return CHARA_INFO[CHARA_INFO.name == chara_id].initstar.values[0]
+
 def get_chara_thumbnail(chara_id):
     chara_name = CHARA_NAME['cn-biliwiki'][chara_id]
     png_name = chara_name + "单个模型"

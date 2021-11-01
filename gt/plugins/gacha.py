@@ -1,3 +1,4 @@
+import json
 import os
 from os import path
 from pathlib import Path
@@ -8,8 +9,33 @@ from nonebot.log import logger
 from aiocqhttp import MessageSegment
 
 import config
-import gt.utilities.chara as chara
-import gt.utilities.resource as resource
+from gt.utilities import chara, resource, util
+
+# User data should be something as follows:
+# {
+#     "user_id": {
+#         "server": {
+#             "charas": [/* character names */],
+#             "crystals": /* int */,
+#             "mileage": /* int */
+#         }
+#     }
+# }
+USER_DATA_DIR = path.join(config.DATA_DIR, 'gacha')
+USER_DATA_FILE = path.join(USER_DATA_DIR, 'users.json')
+
+RANK_CRYSTAL_MAP = { 1: 1, 2: 8, 3: 50 }
+
+GACHA_10_ALIASES = ('抽十连', '十连！', '十连抽', '来个十连', '来发十连', '来次十连', '抽个十连', '抽发十连', '抽次十连', '十连扭蛋', '扭蛋十连', '10连', '10连！', '10连抽', '来个10连', '来发10连', '来次10连', '抽个10连', '抽发10连', '抽次10连', '10连扭蛋', '扭蛋10连')
+
+user_gacha_10_daily_limit = util.DailyNumberLimiter(2)
+
+# Initializations.
+if not path.isfile(USER_DATA_FILE):
+    os.makedirs(USER_DATA_DIR)
+    with open(USER_DATA_FILE, 'w') as f:
+        json.dump({}, f)
+
 
 # Pool is a dictionary: name -> weight (probability)
 def create_default_pool(server, fei_factor=0.5, mei_factor=0.5, knight_male_factor=0.5, knight_female_factor=0.5, guarantee_2star=False):
@@ -52,21 +78,93 @@ def create_default_pool(server, fei_factor=0.5, mei_factor=0.5, knight_male_fact
         raise Exception("Invalid server")
 
 
-@on_command('十连', only_to_me=False)
+@on_command('十连', aliases=GACHA_10_ALIASES, only_to_me=False)
 async def gacha_10(session: CommandSession):
-    res = do_gacha_10(session.event['user_id'], 'cn')
-    res_img = chara.combine_chara_thumbnails_with_rank(res)
+    user_id = session.event['user_id']
+    user_id_str = str(user_id)
+    server = 'cn'
 
-    img_name = resource.push_image_send_queue(res_img)
-    img_url = "file://" + Path(path.join(resource.IMAGE_SEND_QUEUE_CACHE_MNT_DIR, img_name)).as_posix()
-    seg = MessageSegment.image(img_url)
-    logger.info(f"{img_url}")
-    logger.info(f"{seg}")
-    await session.send(seg)
+    # Check if the user has used up daily limit.
+    if user_gacha_10_daily_limit.check(user_id):
+        user_gacha_10_daily_limit.increase(user_id, 1)
+    else:
+        await session.send('你今天不能再抽十连了，请明天再来！')
+        return
+
+    res, new_charas, num_crystals, num_mileage_tickets = do_gacha_10(user_id, server)
+    user_data = read_user_data()
+    total_num_crystals = user_data[user_id_str][server]['crystals']
+    total_num_mileage_tickets = user_data[user_id_str][server]['mileage']
+
+    # Count rank 3.
+    rank3_count = sum(1 for r in res if chara.get_chara_rank(r) == 3)
+    rank2_count = sum(1 for r in res if chara.get_chara_rank(r) == 2)
+    rank1_count = sum(1 for r in res if chara.get_chara_rank(r) == 1)
+
+    # Create at message.
+    seg_at = MessageSegment.at(user_id)
+
+    # Create image.
+    res_img = chara.combine_chara_thumbnails_with_rank(res)
+    seg_img = MessageSegment.image(util.pic2b64(res_img))
+
+    res_text = []
+
+    if len(new_charas) > 0:
+        new_chara_names_comb = '，'.join([f'{chara.CHARA_NAME[server][c]}({chara.get_chara_rank(c)}✦)' for c in new_charas])
+        res_text.append(f"获得新角色：{new_chara_names_comb}")
+
+    if rank3_count == 0:
+        if rank2_count == 1 and rank1_count == 9:
+            res_text.append("惨")
+
+    res_text.append(f"水晶{total_num_crystals}（+{num_crystals}）")
+    res_text.append(f"井票{total_num_mileage_tickets}（+{num_mileage_tickets}）")
+    res_text_comb = '\n'.join(res_text)
+
+    res = f"{seg_at}\n{seg_img}\n{res_text_comb}"
+    await session.send(res)
 
 @on_command('抽一井', only_to_me=False)
 async def gacha_10(session: CommandSession):
     await session.send('不抽')
+
+
+@on_command('仓库', only_to_me=False)
+async def gacha_10(session: CommandSession):
+    user_id = session.event['user_id']
+    user_id_str = str(user_id)
+    server = 'cn'
+
+    user_data = read_user_data()
+    initialize_user_server_data(user_data, user_id, server)
+    user_server_data = user_data[user_id_str][server]
+    all_charas = user_server_data['charas']
+    total_num_crystals = user_server_data['crystals']
+    total_num_mileage_tickets = user_server_data['mileage']
+
+    # Create at message.
+    seg_at = MessageSegment.at(user_id)
+
+    res_text = []
+
+    if len(all_charas) > 0:
+        res_text.append(f"现有角色：")
+        res_text.extend([f'{chara.CHARA_NAME[server][c]}({chara.get_chara_rank(c)}✦)' for c in all_charas if chara.get_chara_rank(c) == 3])
+        rank2_count = sum(1 for r in all_charas if chara.get_chara_rank(r) == 2)
+        rank1_count = sum(1 for r in all_charas if chara.get_chara_rank(r) == 1)
+        if rank2_count > 0:
+            res_text.append(f"{rank2_count}个2✦")
+        if rank1_count > 0:
+            res_text.append(f"{rank1_count}个1✦")
+    else:
+        res_text.append("你一个角色都没")
+
+    res_text.append(f"水晶{total_num_crystals}，井票{total_num_mileage_tickets}")
+    res_text_comb = '\n'.join(res_text)
+
+    res = f"{seg_at}{res_text_comb}"
+    await session.send(res)
 
 
 def do_gacha_n(pool, n):
@@ -76,10 +174,91 @@ def do_gacha_n(pool, n):
         k=n
     )
 
+# Returns gacha result and update user data accordingly.
 def do_gacha_10(user_id, server):
+    user_id_str = str(user_id)
+    user_data = read_user_data()
+    initialize_user_server_data(user_data, user_id, server)
+    user_server_data = user_data[user_id_str][server]
+    user_charas = user_server_data['charas']
+
+    # Adjust specific rates.
+    has_fei = 'fei' in user_charas
+    has_mei = 'mei' in user_charas
+    has_knight_male   = 'knight_male'   in user_charas
+    has_knight_female = 'knight_female' in user_charas
+
+    if has_fei:
+        fei_factor = 1.0
+        mei_factor = 0.0
+    else:
+        if has_mei:
+            fei_factor = 0.0
+            mei_factor = 1.0
+        else:
+            is_fei = random.randint(0, 1) == 0
+            fei_factor = 1.0 if     is_fei else 0.0
+            mei_factor = 1.0 if not is_fei else 0.0
+
+    if has_knight_male:
+        knight_male_factor = 1.0
+        knight_female_factor = 0.0
+    else:
+        if has_knight_female:
+            knight_male_factor = 0.0
+            knight_female_factor = 1.0
+        else:
+            is_knight_male = random.randint(0, 1) == 0
+            knight_male_factor   = 1.0 if     is_knight_male else 0.0
+            knight_female_factor = 1.0 if not is_knight_male else 0.0
+
     res = []
-    pool = create_default_pool(server)
+    pool = create_default_pool(server, fei_factor=fei_factor, mei_factor=mei_factor, knight_male_factor=knight_male_factor, knight_female_factor=knight_female_factor)
     res.extend(do_gacha_n(pool, 9))
-    pool = create_default_pool(server, guarantee_2star=True)
+    pool = create_default_pool(server, fei_factor=fei_factor, mei_factor=mei_factor, knight_male_factor=knight_male_factor, knight_female_factor=knight_female_factor, guarantee_2star=True)
     res.extend(do_gacha_n(pool, 1))
-    return res
+
+    # Find repetitive charas.
+    num_crystals = 0
+    new_charas = []
+    for r in res:
+        if r in user_charas:
+            # Give hero crystals.
+            chara_rank = chara.get_chara_rank(r)
+            num_crystals += RANK_CRYSTAL_MAP[chara_rank]
+        else:
+            # Add chara to user data.
+            new_charas.append(r)
+            user_charas.append(r)
+
+    user_server_data['crystals'] += num_crystals
+    num_mileage_tickets = 10
+    user_server_data['mileage'] += num_mileage_tickets
+
+    # Write user data.
+    save_user_data(user_data)
+
+    return res, new_charas, num_crystals, num_mileage_tickets
+
+def initialize_user_server_data(data, user_id, server):
+    user_id_str = str(user_id)
+    if user_id_str not in data:
+        data[user_id_str] = dict()
+    if server not in data[user_id_str]:
+        data[user_id_str][server] = dict()
+
+    user_server_data = data[user_id_str][server]
+    if 'charas' not in user_server_data:
+        user_server_data['charas'] = []
+    if 'crystals' not in user_server_data:
+        user_server_data['crystals'] = 0
+    if 'mileage' not in user_server_data:
+        user_server_data['mileage'] = 0
+
+def read_user_data():
+    with open(USER_DATA_FILE, 'r') as f:
+        return json.load(f)
+
+def save_user_data(data):
+    with open(USER_DATA_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
