@@ -21,23 +21,24 @@ async def group(session: CommandSession):
     if dateInFile is None or dateInFile > current_time():
         dateInFileString = '上次啥时候忘了'
         if dateInFile is not None:
-            dateInFileString = '上次时间是{}'.format(date_to_string_translator(dateInFile))
-        currentTimeString = date_to_string_translator(current_time())
+            dateInFileString = '上次时间是{}'.format(date_to_string_translator(dateInFile, True))
+        currentTimeString = date_to_string_translator(current_time(), True)
         await session.send('合作还没开吧, 现在时间是{}，{}'.format(currentTimeString, dateInFileString))
         return
     
     event = session.event.copy()
 
     # Adds the sender to the waiting list if the user is not there. 
-    waitlist = waitlist_user()
+    currentIds = qqIdsInFile()
     username = event['sender']['nickname']
-    if username in waitlist:
+    userid = event['sender']['user_id']
+
+    if userid in currentIds:
         await session.send('{} 你已经在里面了，现在有{}'.format(username, waitlist))
         return 
 
-    write_to_file(username)
+    write_to_file(', '.join([username, userid]))
     
-    waitlist = waitlist_user()
     # Sends messages if there are 4 people already. 
     with open(FILE_NAME, newline='') as f:
         rows = f.read().splitlines()
@@ -45,11 +46,11 @@ async def group(session: CommandSession):
         for row in rows:
             if row.startswith('date: '):
                 continue
-            answerMessage = '人够了！gogogo！'
+            answerMessage = '人够了！gogogo！' + waitlist_user(True)
         # Cleans up the file if there is enough people. 
         clean_up_file(True)
     else:
-        answerMessage = '人还不够，现在有{}在等'.format(waitlist)
+        answerMessage = '人还不够，现在{}在等'.format(waitlist_user())
     
     await session.send(answerMessage)
     return
@@ -93,13 +94,8 @@ async def date(session: CommandSession) -> str:
         clean_up_file()
         newDate = date_to_string_translator(inputDate)
         write_to_file(newDate)
-        await session.send('新的合作时间: {}'.format(newDate))
+        await session.send('新的合作时间: {}'.format(newDate[6:]))
     return
-
-
-# The current user who wants to be in the group list. 
-def get_user_name(city: str) -> str:
-    return 
 
 # Checks if current list exists if not create it
 def check_dir():
@@ -111,8 +107,10 @@ def string_to_date_translator(stringInput) -> date:
     return datetime.strptime(stringInput, '%m/%d/%Y').replace(tzinfo=TIME_ZONE)
 
 # Translates a date into string with title. 
-def date_to_string_translator(dateInput) -> str:
+def date_to_string_translator(dateInput, noHeader = False) -> str:
     newString = dateInput.strftime('%m/%d/%Y')
+    if (noHeader):
+        return newString
     return 'date: {}'.format(newString)
 
 # Current time
@@ -148,11 +146,24 @@ def existing_date():
                 return None 
 
 # Returns the existing people in the file.
-def waitlist_user():
+def waitlist_user(pingUser = False):
     with open(FILE_NAME, newline='') as f:
         rows = f.read().splitlines()
 
-    return ', '.join([rows[i] for i in range(1, len(rows))])
+    if not pingUser:
+        return ', '.join([rows[i].split(',')[0] for i in range(1, len(rows))])
+
+    return ', '.join([at_user(rows[i].split(',')[1]) for i in range(1, len(rows))])
+
+# Returns the string required to @ someone. 
+def at_user(qqId):
+    return '[CQ:at,qq={}]'.format(qqId)
+
+# Returns the ids existing in the current file. 
+def qqIdsInFile():
+    with open(FILE_NAME, newline='') as f:
+        rows = f.read().splitlines()
+    return ', '.join([rows[i].split(',')[1] for i in range(1, len(rows))])
 
 # Write contents in the csv file 
 def write_to_file(content):
