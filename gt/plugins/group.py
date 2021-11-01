@@ -1,6 +1,7 @@
 import csv
 import os, pathlib
 
+from datetime import timedelta
 from datetime import datetime
 from pytz import timezone
 from os.path import exists
@@ -17,7 +18,7 @@ TIME_ZONE = timezone('Asia/Shanghai')
 async def group(session: CommandSession):
     check_dir()
     dateInFile = existing_date()
-    coopTimeRange = datetime.timedelta(days = 14)
+    coopTimeRange = timedelta(days = 14)
 
     # Checks if the coop date exists or if the current date is not valid anymore. 
     if dateInFile is None or dateInFile > current_time() or (dateInFile + coopTimeRange) < current_time()  :
