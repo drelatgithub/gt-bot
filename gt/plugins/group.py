@@ -35,7 +35,7 @@ async def group(session: CommandSession):
 
     if userid in currentIds:
         if len(currentIds) == 1:
-            await session.send('{} 你已经在里面了，现在只有你'.format(username))
+            await session.send('{} 你已经在里面了，现在只有你，给老子再等等'.format(username))
             return
         await session.send('{} 你已经在里面了，现在有{}'.format(username, waitlist_user()))
         return 
@@ -59,7 +59,7 @@ async def group(session: CommandSession):
     return
 
 # Remove a user from file. 
-@on_command('不打了', aliases=('我不打了', '我不等了', '我先开了', '下次再打'))
+@on_command('不打了', aliases=('我不打了', '不等了', '我先开了', '下次再打', '先开了'))
 async def remove_user(session: CommandSession):
     check_dir()
     currentIds = qqIdsInFile()
@@ -72,7 +72,7 @@ async def remove_user(session: CommandSession):
     await session.send('okay，那就下次再打吧')
 
 # Checks the current status. 
-@on_command('查询合作', aliases=('查询合作模式', '查询组队', '当前合作', '几个人啊','现在几个人啊','人够不够了'))
+@on_command('查询合作', aliases=('查询合作模式', '查询组队', '当前合作', '几个人啊','现在几个人啊','人够不够了', '几个人'))
 async def search_group(session: CommandSession):
     check_dir()
 
@@ -168,7 +168,7 @@ def remove_lines(identifier):
     with open(FILE_NAME, "w") as f:
         for row in rows:
             if identifier not in row:
-                f.write(row)
+                f.write(row + '\n')
 
 # Returns the existing people in the file.
 def waitlist_user(pingUser = False):
