@@ -37,7 +37,7 @@ async def group(session: CommandSession):
 
     # Adds the sender to the waiting list if the user is not there. 
     currentIds = qqIdsInFile()
-    username = event['sender']['nickname']
+    username = event['sender']['card']
     userid = str(event['sender']['user_id'])
 
     if userid in currentIds:
