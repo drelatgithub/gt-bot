@@ -17,7 +17,9 @@ from gt.utilities import chara, resource, util
 #         "server": {
 #             "charas": [/* character names */],
 #             "crystals": /* int */,
-#             "mileage": /* int */
+#             "mileage": /* int */,
+#             "10_pull_count": /* int */,
+#             "last_10_pull_day": /* int */
 #         }
 #     }
 # }
@@ -27,8 +29,7 @@ USER_DATA_FILE = path.join(USER_DATA_DIR, 'users.json')
 RANK_CRYSTAL_MAP = { 1: 1, 2: 8, 3: 50 }
 
 GACHA_10_ALIASES = ('抽十连', '十连！', '十连抽', '来个十连', '来发十连', '来次十连', '抽个十连', '抽发十连', '抽次十连', '十连扭蛋', '扭蛋十连', '10连', '10连！', '10连抽', '来个10连', '来发10连', '来次10连', '抽个10连', '抽发10连', '抽次10连', '10连扭蛋', '扭蛋10连')
-
-user_gacha_10_daily_limit = util.DailyNumberLimiter(2)
+USER_GACHA_10_DAILY_LIMIT = 2
 
 # Initializations.
 if not path.isfile(USER_DATA_FILE):
@@ -84,15 +85,24 @@ async def gacha_10(session: CommandSession):
     user_id_str = str(user_id)
     server = 'cn'
 
-    # Check if the user has used up daily limit.
-    if user_gacha_10_daily_limit.check(user_id):
-        user_gacha_10_daily_limit.increase(user_id, 1)
-    else:
-        await session.send('你今天不能再抽十连了，请明天再来！')
-        return
-
-    res, new_charas, num_crystals, num_mileage_tickets = do_gacha_10(user_id, server)
     user_data = read_user_data()
+    initialize_user_server_data(user_data, user_id, server)
+    user_server_data = user_data[user_id_str][server]
+
+    # Check if the user has used up daily limit.
+    now_day = util.current_time().day
+    if now_day != user_server_data['last_10_pull_day']:
+        user_server_data['last_10_pull_day'] = now_day
+        user_server_data['10_pull_count'] = 0
+
+    if user_server_data['10_pull_count'] >= USER_GACHA_10_DAILY_LIMIT:
+        await session.send('你今天不能再抽十连了，明天再来！')
+        save_user_data(user_data)
+        return
+    else:
+        user_server_data['10_pull_count'] += 1
+
+    res, new_charas, num_crystals, num_mileage_tickets = do_gacha_10(user_data, user_id, server)
     total_num_crystals = user_data[user_id_str][server]['crystals']
     total_num_mileage_tickets = user_data[user_id_str][server]['mileage']
 
@@ -123,6 +133,10 @@ async def gacha_10(session: CommandSession):
     res_text_comb = '\n'.join(res_text)
 
     res = f"{seg_at}\n{seg_img}\n{res_text_comb}"
+
+    # Write user data.
+    save_user_data(user_data)
+
     await session.send(res)
 
 @on_command('抽一井', only_to_me=False)
@@ -175,10 +189,8 @@ def do_gacha_n(pool, n):
     )
 
 # Returns gacha result and update user data accordingly.
-def do_gacha_10(user_id, server):
+def do_gacha_10(user_data, user_id, server):
     user_id_str = str(user_id)
-    user_data = read_user_data()
-    initialize_user_server_data(user_data, user_id, server)
     user_server_data = user_data[user_id_str][server]
     user_charas = user_server_data['charas']
 
@@ -235,9 +247,6 @@ def do_gacha_10(user_id, server):
     num_mileage_tickets = 10
     user_server_data['mileage'] += num_mileage_tickets
 
-    # Write user data.
-    save_user_data(user_data)
-
     return res, new_charas, num_crystals, num_mileage_tickets
 
 def initialize_user_server_data(data, user_id, server):
@@ -254,6 +263,10 @@ def initialize_user_server_data(data, user_id, server):
         user_server_data['crystals'] = 0
     if 'mileage' not in user_server_data:
         user_server_data['mileage'] = 0
+    if '10_pull_count' not in user_server_data:
+        user_server_data['10_pull_count'] = 0
+    if 'last_10_pull_day' not in user_server_data:
+        user_server_data['last_10_pull_day'] = -1
 
 def read_user_data():
     with open(USER_DATA_FILE, 'r') as f:

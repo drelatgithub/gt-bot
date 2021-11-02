@@ -6,31 +6,12 @@ from io import BytesIO
 from PIL import Image
 import pytz
 
-# Copied from HoshinoBot.
-class DailyNumberLimiter:
-    tz = pytz.timezone('Asia/Shanghai')
-    
-    def __init__(self, max_num):
-        self.today = -1
-        self.count = defaultdict(int)
-        self.max = max_num
+TIME_ZONE = pytz.timezone('Asia/Shanghai')
 
-    def check(self, key) -> bool:
-        now = datetime.now(self.tz)
-        day = now.day
-        if day != self.today:
-            self.today = day
-            self.count.clear()
-        return bool(self.count[key] < self.max)
+# Current time
+def current_time():
+    return datetime.now(TIME_ZONE)
 
-    def get_num(self, key):
-        return self.count[key]
-
-    def increase(self, key, num=1):
-        self.count[key] += num
-
-    def reset(self, key):
-        self.count[key] = 0
 
 # Copied from HoshinoBot.
 def pic2b64(pic:Image) -> str:

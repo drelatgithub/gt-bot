@@ -9,9 +9,9 @@ from nonebot import on_command, CommandSession
 from nonebot.log import logger
 
 import config
+from gt.utilities.util import TIME_ZONE, current_time
 
 FILE_NAME = os.path.join(config.DATA_DIR, 'group', 'current_list.txt')
-TIME_ZONE = timezone('Asia/Shanghai')
 
 # Adds the user into the waitlist. 
 @on_command('group', aliases=('组队', '合作模式', '带我一个', '想打合作了'), only_to_me=False)
@@ -138,10 +138,6 @@ def date_to_string_translator(dateInput, noHeader = False) -> str:
     if (noHeader):
         return newString
     return 'date: {}'.format(newString)
-
-# Current time
-def current_time():
-    return datetime.now(TIME_ZONE)
 
 # Create an empty file. 
 def clean_up_file(keep_existing_date = False):
