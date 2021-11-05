@@ -13,18 +13,19 @@ from aiocqhttp import MessageSegment
 import config
 from gt.utilities import util
 
-ROULETTE_NUM_BULLET = 6
-ROULETTE_POSSIBLE_PLAYERS = { 2, 3, 6 }
+ROULETTE_NUM_BULLET_DEFAULT = 6
+ROULETTE_MAP_NUM_PLAYER_BULLET = { 2:6, 3:6, 4:8, 5:10, 6:6 }
 ROULETTE_MAX_PLAYERS = 6
-ROULETTE_ALIASES = ('俄罗斯轮盘赌', '参与轮盘赌', '俄罗斯轮盘', '轮盘')
+ROULETTE_ALIASES = ('俄罗斯轮盘赌', '参与轮盘赌', '俄罗斯轮盘', '轮盘', '轮', '盘')
+ROULETTE_START_ALIASES = ('开')
 ROULETTE_PLAYER_TIMEOUT = 20
 
 RouletteFireResult = Enum('RouletteFireResult', ('normal', 'failure', 'retarget', 'explode'))
 ROULETTE_FIRE_RESULT_WEIGHT = {
     RouletteFireResult.normal:    100,
-    RouletteFireResult.failure:   2,
-    RouletteFireResult.retarget:  5,
-    RouletteFireResult.explode:   2
+    RouletteFireResult.failure:   3,
+    RouletteFireResult.retarget:  6,
+    RouletteFireResult.explode:   3
 }
 
 class RouletteState:
@@ -33,7 +34,7 @@ class RouletteState:
         self.player_ids = []
         self.next_player_index = 0
         self.next_bullet_index = 0
-        self.bullet_index = random.randint(0, ROULETTE_NUM_BULLET - 1)
+        self.bullet_index = random.randint(0, ROULETTE_NUM_BULLET_DEFAULT - 1)
         self.player_timer = None
 
 # A map from group id -> roulette game state.
@@ -64,7 +65,7 @@ async def roulette_join(session: CommandSession):
             await session.send(f'报名成功，当前共{len(roulette_state.player_ids)}人')
 
 
-@on_command('开始', only_to_me=False)
+@on_command('开始', aliases=ROULETTE_START_ALIASES, only_to_me=False)
 async def roulette_start(session: CommandSession):
     if 'group_id' in session.event:
         group_id = session.event['group_id']
@@ -79,10 +80,14 @@ async def roulette_start(session: CommandSession):
         return await session.send('轮盘赌正在进行！')
     elif user_id not in roulette_state.player_ids:
         return await session.send('你还没报名')
-    elif len(roulette_state.player_ids) not in ROULETTE_POSSIBLE_PLAYERS:
+    elif len(roulette_state.player_ids) not in ROULETTE_MAP_NUM_PLAYER_BULLET:
         return await session.send('人数不够开始还')
     else:
-        await session.send('好，开始！')
+        msg = []
+        msg.append('好，开始！')
+        if len(roulette_state.player_ids) in (4, 5):
+            msg.append(f'弹匣容量为{ROULETTE_MAP_NUM_PLAYER_BULLET[len(roulette_state.player_ids)]}')
+        await session.send('\n'.join(msg))
         start_roulette(roulette_state)
         await send_roulette_instruction(session, roulette_state)
 
@@ -113,7 +118,7 @@ async def roulette_fire(session: CommandSession):
 
 def start_roulette(roulette_state: RouletteState):
     roulette_state.next_player_index = 0
-    roulette_state.bullet_index = random.randint(0, ROULETTE_NUM_BULLET - 1)
+    roulette_state.bullet_index = random.randint(0, ROULETTE_MAP_NUM_PLAYER_BULLET[len(roulette_state.player_ids)] - 1)
     roulette_state.next_bullet_index = 0
     roulette_state.in_game = True
 
