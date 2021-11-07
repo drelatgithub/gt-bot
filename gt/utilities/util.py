@@ -3,7 +3,7 @@ import base64
 from collections import defaultdict
 from datetime import datetime
 from io import BytesIO
-
+from enum import Enum
 from PIL import Image
 import pytz
 
@@ -22,6 +22,21 @@ class Timer:
 
     def cancel(self):
         self._task.cancel()
+
+# Category for food: Meat, Fish, Vegetable, Drink, Snack, Bell pepper.
+class Category(Enum):
+    MEAT = 1
+    FISH = 2
+    VEGETABLE = 3
+    DRINK = 4
+    SNACK = 5
+    BELL_PEPPER = 6
+
+# Available tiem for food: Breakfast, Lunch, Dinner. 
+class FoodTime(Enum):
+    BREAKFAST = 1
+    LUNCH = 2
+    DINNER = 3
 
 # Current time
 def current_time():

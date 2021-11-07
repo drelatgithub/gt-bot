@@ -1,10 +1,8 @@
-import csv
 import os, pathlib
 
 from datetime import timedelta
 from datetime import datetime
 from pytz import timezone
-from os.path import exists
 from nonebot import on_command, CommandSession
 from nonebot.log import logger
 
@@ -196,7 +194,7 @@ def qqIdsInFile():
         rows = f.read().splitlines()
     return [rows[i].split(',')[1].strip() for i in range(1, len(rows))]
 
-# Write contents in the csv file 
+# Write contents in a text file.
 def write_to_file(content):
     with open(FILE_NAME, 'a', newline='') as f:
         f.write(content + '\n')
