@@ -30,6 +30,7 @@ RANK_CRYSTAL_MAP = { 1: 1, 2: 8, 3: 50 }
 
 GACHA_10_ALIASES = ('抽十连', '十连！', '十连抽', '来个十连', '来发十连', '来次十连', '抽个十连', '抽发十连', '抽次十连', '十连扭蛋', '扭蛋十连', '10连', '10连！', '10连抽', '来个10连', '来发10连', '来次10连', '抽个10连', '抽发10连', '抽次10连', '10连扭蛋', '扭蛋10连')
 USER_GACHA_10_DAILY_LIMIT = 2
+USER_GACHA_100_DAILY_LIMIT = 1
 
 # Initializations.
 if not path.isfile(USER_DATA_FILE):
@@ -139,13 +140,74 @@ async def gacha_10(session: CommandSession):
 
     await session.send(res)
 
+@on_command('一百连', only_to_me=False)
+async def gacha_100(session: CommandSession):
+    user_id = session.event['user_id']
+    user_id_str = str(user_id)
+    server = 'cn'
+
+    user_data = read_user_data()
+    initialize_user_server_data(user_data, user_id, server)
+    user_server_data = user_data[user_id_str][server]
+
+    # Check if the user has used up daily limit.
+    now_day = util.current_time().day
+    if now_day != user_server_data['last_100_pull_day']:
+        user_server_data['last_100_pull_day'] = now_day
+        user_server_data['100_pull_count'] = 0
+
+    if user_server_data['100_pull_count'] >= USER_GACHA_100_DAILY_LIMIT:
+        await session.send('你今天不能再抽一百连了！')
+        save_user_data(user_data)
+        return
+    else:
+        user_server_data['100_pull_count'] += 1
+
+    res, new_charas, num_crystals, num_mileage_tickets = do_gacha_100(user_data, user_id, server)
+    total_num_crystals = user_data[user_id_str][server]['crystals']
+    total_num_mileage_tickets = user_data[user_id_str][server]['mileage']
+
+    # Count rank 3.
+    rank3_count = sum(1 for r in res if chara.get_chara_rank(r) == 3)
+    rank2_count = sum(1 for r in res if chara.get_chara_rank(r) == 2)
+    rank1_count = sum(1 for r in res if chara.get_chara_rank(r) == 1)
+
+    # Create at message.
+    seg_at = MessageSegment.at(user_id)
+
+    # Create image.
+    res_img = chara.combine_chara_thumbnails_with_rank(res)
+    seg_img = MessageSegment.image(util.pic2b64(res_img))
+
+    res_text = []
+
+    if len(new_charas) > 0:
+        new_chara_names_comb = '，'.join([f'{chara.CHARA_NAME[server][c]}({chara.get_chara_rank(c)}✦)' for c in new_charas])
+        res_text.append(f"获得新角色：{new_chara_names_comb}")
+
+    if rank3_count == 0:
+        if rank2_count == 1 and rank1_count == 9:
+            res_text.append("惨")
+
+    res_text.append(f"水晶{total_num_crystals}（+{num_crystals}）")
+    res_text.append(f"井票{total_num_mileage_tickets}（+{num_mileage_tickets}）")
+    res_text_comb = '\n'.join(res_text)
+
+    res = f"{seg_at}\n{seg_img}\n{res_text_comb}"
+
+    # Write user data.
+    save_user_data(user_data)
+
+    await session.send(res)
+
+
 @on_command('抽一井', only_to_me=False)
 async def gacha_10(session: CommandSession):
     await session.send('不抽')
 
 
 @on_command('仓库', only_to_me=False)
-async def gacha_10(session: CommandSession):
+async def gacha_storage(session: CommandSession):
     user_id = session.event['user_id']
     user_id_str = str(user_id)
     server = 'cn'
@@ -249,6 +311,20 @@ def do_gacha_10(user_data, user_id, server):
 
     return res, new_charas, num_crystals, num_mileage_tickets
 
+def do_gacha_100(user_data, user_id, server):
+    res = []
+    new_charas = []
+    num_crystals = 0
+    num_mileage_tickets = 0
+    for _ in range(10):
+        r, nc, nc_c, nc_m = do_gacha_10(user_data, user_id, server)
+        res.extend(r)
+        new_charas.extend(nc)
+        num_crystals += nc_c
+        num_mileage_tickets += nc_m
+    return res, new_charas, num_crystals, num_mileage_tickets
+
+
 def initialize_user_server_data(data, user_id, server):
     user_id_str = str(user_id)
     if user_id_str not in data:
@@ -267,6 +343,10 @@ def initialize_user_server_data(data, user_id, server):
         user_server_data['10_pull_count'] = 0
     if 'last_10_pull_day' not in user_server_data:
         user_server_data['last_10_pull_day'] = -1
+    if '100_pull_count' not in user_server_data:
+        user_server_data['100_pull_count'] = 0
+    if 'last_100_pull_day' not in user_server_data:
+        user_server_data['last_100_pull_day'] = -1
 
 def read_user_data():
     with open(USER_DATA_FILE, 'r') as f:
