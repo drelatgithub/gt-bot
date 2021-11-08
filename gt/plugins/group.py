@@ -23,11 +23,11 @@ async def group(session: CommandSession):
         dateInFileString = '上次啥时候忘了'
         if dateInFile is not None:
             if dateInFile > current_time():
-                dateInFileString = '下次时间是{}'.format(date_to_string_translator(dateInFile, True))
+                dateInFileString = '下次时间是{}'.format(util.date_to_string_translator(dateInFile, True))
             else:
-                dateInFileString = '上次已经是{}'.format(date_to_string_translator(dateInFile, True))
+                dateInFileString = '上次已经是{}'.format(util.date_to_string_translator(dateInFile, True))
             
-        currentTimeString = date_to_string_translator(current_time(), True)
+        currentTimeString = util.date_to_string_translator(current_time(), True)
         await session.send('合作还没开吧, 现在时间是{}，{}'.format(currentTimeString, dateInFileString))
         return
     
@@ -102,7 +102,7 @@ async def date(session: CommandSession) -> str:
     if arg_str != '':
         logger.debug(f'Time is "{arg_str}"')
         try: 
-            inputDate = string_to_date_translator(arg_str)
+            inputDate = util.string_to_date_translator(arg_str)
         except ValueError:
             await session.send('你这日期有问题啊，不是mm/dd/yyyy')
             return
@@ -111,12 +111,12 @@ async def date(session: CommandSession) -> str:
 
     # User input doesn't contains date, assume the user wants to check the start date. 
     if inputDate is None and dateInFile is not None:
-        await session.send('合作{}开始'.format(date_to_string_translator(dateInFile, True)))
+        await session.send('合作{}开始'.format(util.date_to_string_translator(dateInFile, True)))
     elif inputDate is None and dateInFile is None:
         await session.send('俺也不知道合作啥时候开始')
     elif inputDate is not None:
         clean_up_file()
-        newDate = date_to_string_translator(inputDate)
+        newDate = util.date_to_string_translator(inputDate)
         write_to_file(newDate)
         await session.send('新的合作时间: {}'.format(newDate[6:]))
     return
@@ -125,17 +125,6 @@ async def date(session: CommandSession) -> str:
 def check_dir():
     if not os.path.isfile(FILE_NAME):
         pathlib.Path(FILE_NAME).touch()
-
-# Translates a string into date. 
-def string_to_date_translator(stringInput) -> date:
-    return datetime.strptime(stringInput, '%m/%d/%Y').replace(tzinfo=TIME_ZONE)
-
-# Translates a date into string with title. 
-def date_to_string_translator(dateInput, noHeader = False) -> str:
-    newString = dateInput.strftime('%m/%d/%Y')
-    if (noHeader):
-        return newString
-    return 'date: {}'.format(newString)
 
 # Create an empty file. 
 def clean_up_file(keep_existing_date = False):
@@ -148,7 +137,7 @@ def clean_up_file(keep_existing_date = False):
     if tempDate is not None:
         os.remove(FILE_NAME)
         check_dir()
-        newDate = date_to_string_translator(tempDate)
+        newDate = util.date_to_string_translator(tempDate)
         write_to_file(newDate)
 
 # Returns the date in the file if exists. 
@@ -161,7 +150,7 @@ def existing_date():
         logger.debug(f"First row in current list file: {dateRange}")
         if dateRange.startswith('date: '):
             try: 
-                return string_to_date_translator(dateRange[6:])
+                return util.string_to_date_translator(dateRange[6:])
             except ValueError:
                 return None 
 

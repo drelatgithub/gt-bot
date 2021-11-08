@@ -38,9 +38,24 @@ class FoodTime(Enum):
     LUNCH = 2
     DINNER = 3
 
+# Auxiliary functions for date times.
+#---------------------------------------
+
 # Current time
 def current_time():
     return datetime.now(TIME_ZONE)
+
+# Translates a string into date. 
+def string_to_date_translator(stringInput) -> date:
+    return datetime.strptime(stringInput, '%m/%d/%Y').replace(tzinfo=TIME_ZONE)
+
+# Translates a date into string with title. 
+def date_to_string_translator(dateInput, noHeader = False) -> str:
+    newString = dateInput.strftime('%m/%d/%Y')
+    if (noHeader):
+        return newString
+    return 'date: {}'.format(newString)
+
 
 
 # Copied from HoshinoBot.
