@@ -18,7 +18,7 @@ USER_DATA_DIR = path.join(config.DATA_DIR, 'gacha')
 USER_DATA_FILE = path.join(USER_DATA_DIR, 'users.json')
 
 
-SETU_ALIASES = ('涩图', '瑟图', '不够涩', '不够色')
+SETU_ALIASES = ('涩图', '瑟图', '不够涩', '不够色', '冲', '冲！')
 USER_SETU_DAILY_LIMIT = 2
 
 
@@ -44,8 +44,6 @@ async def setu_get(session: CommandSession):
         await session.send(random.choice(['你今天不该再冲了！', '你冲的太快了，明天才能再来！']))
         gacha.save_user_data(user_data)
         return
-    else:
-        user_server_data['setu_count'] += 1
 
     try:
         setu_content = resource.get_setu_with_tag(arg_str)
@@ -53,6 +51,8 @@ async def setu_get(session: CommandSession):
         logger.error(e)
         await session.send(f'没有找到{arg_str}色图！')
         return
+
+    user_server_data['setu_count'] += 1
 
     res_img = Image.open(io.BytesIO(setu_content))
     seg_img = MessageSegment.image(util.pic2b64(res_img))
