@@ -106,6 +106,11 @@ async def _(session: NLPSession):
     stripped_msg = session.msg_text.strip()
     return IntentCommand(90.0, '加餐', current_arg=stripped_msg[6:])
 
+@on_natural_language(keywords={'来一份'}, only_to_me=False)
+async def _(session: NLPSession):
+    stripped_msg = session.msg_text.strip()
+    return IntentCommand(90.0, '加餐', current_arg=stripped_msg[3:])
+
 # Generates food for today and store it in the food menu.
 def generateFood(current_date_str: str):
     sum_food_scores = sum(FOOD_SCORES)
