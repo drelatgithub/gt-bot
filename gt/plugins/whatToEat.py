@@ -30,6 +30,7 @@ USER_DATA_DIR = path.join(config.DATA_DIR, 'gacha')
 USER_DATA_FILE = path.join(USER_DATA_DIR, 'users.json')
 CAI_JIAO_NAMES = FOOD_INFO.loc[FOOD_INFO['Category'] == Category.BELL_PEPPER.name]['Name'].values
 
+WHAT_TO_EAT_ALIAS = ('今天吃什么','有什么吃的','吃什么啊','吃什么',)
 WINDOW_BREAK_STATS_ALIAS = ('今天打玻璃了吗', '今天玻璃碎了吗', '玻璃碎了吗', '玻璃')
 NO_WINDOW_BREAK_MESSAGE = ['没有啊，玻璃是好的','应该没有吧','公主今天很听话，玻璃还是好的',
                             '公主出去玩了，应该还好','我还没看，应该是好的吧']
@@ -38,7 +39,7 @@ WINDOW_BREAK_MESSAGE = ['有的！今天吃彩椒！','看着桌上的彩椒你�
 NOT_ENOUGH_CRYSTAL_MESSAGE = ['你水晶不够，吃屁','就你这小水晶，嘿嘿','都是大鹏摘的，你这水晶哪儿够啊','我看你是真的不懂哦']
 ADD_FOOD_SUCCESS_MESSAGE = ['哼，这次就多做一点吧','不知道小公主知道了会是什么心情呢','谢谢老板！下次再来哦']
 
-@on_command('小公主今天吃什么', only_to_me=False)
+@on_command('小公主今天吃什么', aliases=WHAT_TO_EAT_ALIAS, only_to_me=False)
 async def what_to_eat_today(session: CommandSession):
     food_menu = food_today()
     await session.send('今天有{}'.format(', '.join(food_menu)))
@@ -95,7 +96,9 @@ async def add_food(session: CommandSession):
     food_history_info.to_csv(FOOD_HISTORY_FILE)
     gacha.save_user_data(user_data)
 
-    await session.send(random.choice(ADD_FOOD_SUCCESS_MESSAGE))
+    info_message = '你花了{}给小公主加餐，还剩{}。 '.format(food_crystal, user_data[user_id_str][server]['crystals'])
+
+    await session.send(info_message + random.choice(ADD_FOOD_SUCCESS_MESSAGE))
 
 
 @on_natural_language(keywords={'给小公主加个'}, only_to_me=False)
