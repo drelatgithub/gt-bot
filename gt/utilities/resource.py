@@ -1,7 +1,9 @@
+import json
 import os
 from os import path
-
 import requests
+from urllib.parse import quote
+
 from bs4 import BeautifulSoup
 from PIL import Image
 
@@ -57,7 +59,25 @@ def push_image_send_queue(im):
     image_send_queue_id += 1
     return image_name
 
+
+def get_setu_with_tag(tag: str):
+    tag_safe = quote(tag)
+    url_loli = f'https://api.lolicon.app/setu/v2?r18=0&tag={tag_safe}&size=original&size=regular'
+    r_loli = requests.get(url_loli)
+    if r_loli.status_code != 200:
+        raise Exception(f"Failed to get setu with tag {tag}.")
+    j_loli = json.loads(r_loli.text)
+    data_loli = j_loli['data']
+    if len(data_loli) == 0:
+        raise Exception(f"No setu with tag {tag}.")
+
+    available_urls = data_loli[0]['urls']
+    if 'regular' not in available_urls:
+        raise Exception(f"No regular size setu with tag {tag}.")
+    url_regular = available_urls['regular']
+
+    r_regular = requests.get(url_regular)
+    return r_regular.content
+    
 if __name__ == "__main__":
-    png_content = find_png_in_biliwiki("未来公主单个模型")
-    with open("未来公主单个模型.png", "wb") as f:
-        f.write(png_content)
+    quote("asdfdsf傻逼/\\rfrm")

@@ -398,6 +398,11 @@ def initialize_user_server_data(data, user_id, server):
     if 'last_100_pull_day' not in user_server_data:
         user_server_data['last_100_pull_day'] = -1
 
+    if 'setu_count' not in user_server_data:
+        user_server_data['setu_count'] = 0
+    if 'last_setu_day' not in user_server_data:
+        user_server_data['last_setu_day'] = -1
+
 def read_user_data():
     with open(USER_DATA_FILE, 'r') as f:
         return json.load(f)
