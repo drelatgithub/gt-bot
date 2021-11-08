@@ -27,8 +27,6 @@ USER_DATA_DIR = path.join(config.DATA_DIR, 'gacha')
 USER_DATA_FILE = path.join(USER_DATA_DIR, 'users.json')
 CAI_JIAO_NAMES = FOOD_INFO.loc[FOOD_INFO['Category'] == Category.BELL_PEPPER.name]['Name'].values
 
-BREAK_WINDOW = bool(random.getrandbits(1))
-BREAK_WINDOW_FOUND_OUT = ((random.random() < 0.2) and BREAK_WINDOW)
 WINDOW_BREAK_STATS_ALIAS = ('今天打玻璃了吗', '今天玻璃碎了吗', '玻璃碎了吗', '玻璃')
 NO_WINDOW_BREAK_MESSAGE = ['没有啊，玻璃是好的','应该没有吧','公主今天很听话，玻璃还是好的',
                             '公主出去玩了，应该还好','我还没看，应该是好的吧']
@@ -45,7 +43,7 @@ async def what_to_eat_today(session: CommandSession):
 
 @on_command('小公主今天打玻璃了吗', aliases=WINDOW_BREAK_STATS_ALIAS, only_to_me=False)
 async def break_window_today(session: CommandSession):
-    if(BREAK_WINDOW_FOUND_OUT):
+    if(window_break_found_out() is 'True'):
         message = random.choice(WINDOW_BREAK_MESSAGE)
     else:
         message = random.choice(NO_WINDOW_BREAK_MESSAGE)
@@ -108,13 +106,17 @@ def generateFood(current_date_str: str):
         replace = False,
         p = FOOD_SCORES)
 
+    break_window = bool(random.getrandbits(1))
+    break_window_found_out = ((random.random() < 0.2) and break_window)
+
     cai_jiao_toady = random.choice(CAI_JIAO_NAMES)
 
-    if (BREAK_WINDOW_FOUND_OUT and cai_jiao_toady not in food_today):
+
+    if (break_window_found_out and cai_jiao_toady not in food_today):
         food_today.append(cai_jiao_toady)
 
     df = pandas.DataFrame([
-        [current_date_str, food_today, {}]
+        [current_date_str, food_today, str(break_window), str(break_window_found_out), {}]
     ])
     df.to_csv(FOOD_HISTORY_FILE, index=False, mode='a', header=False)
 
@@ -126,5 +128,13 @@ def food_today():
     if current_date_str not in food_history_info['Date'].values:
         generateFood(current_date_str)
     return food_history_info.loc[food_history_info['Date'] == current_date_str]['Name'].values[0]
-    
 
+
+# Gets the window status.
+def window_break_found_out():
+    current_date_str = date_to_string_translator(current_time(), True)
+
+    food_history_info = pandas.read_csv(FOOD_HISTORY_FILE, encoding='utf-8')
+    if current_date_str not in food_history_info['Date'].values:
+        generateFood(current_date_str)
+    return food_history_info.loc[food_history_info['Date'] == current_date_str]['WINDOW_BREAK_FOUND_OUT'].values[0]
