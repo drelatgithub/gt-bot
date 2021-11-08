@@ -46,7 +46,7 @@ def current_time():
     return datetime.now(TIME_ZONE)
 
 # Translates a string into date. 
-def string_to_date_translator(stringInput) -> date:
+def string_to_date_translator(stringInput) -> datetime:
     return datetime.strptime(stringInput, '%m/%d/%Y').replace(tzinfo=TIME_ZONE)
 
 # Translates a date into string with title. 

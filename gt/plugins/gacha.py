@@ -33,7 +33,7 @@ USER_GACHA_10_DAILY_LIMIT = 2
 
 # Initializations.
 if not path.isfile(USER_DATA_FILE):
-    os.makedirs(USER_DATA_DIR)
+    os.makedirs(USER_DATA_DIR, exist_ok=True)
     with open(USER_DATA_FILE, 'w') as f:
         json.dump({}, f)
 

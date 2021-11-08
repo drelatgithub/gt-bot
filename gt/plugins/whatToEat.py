@@ -1,3 +1,4 @@
+from ast import literal_eval
 import os, pathlib
 import pandas
 import config
@@ -11,6 +12,8 @@ from pytz import timezone
 from nonebot import on_command, CommandSession
 from os import path
 from nonebot import on_natural_language, NLPSession, IntentCommand
+from nonebot.log import logger
+
 from gt.utilities.util import TIME_ZONE, current_time, Category, string_to_date_translator, date_to_string_translator
 from aiocqhttp import MessageSegment
 from gt.plugins import gacha
@@ -56,9 +59,9 @@ async def add_food(session: CommandSession):
     server = 'cn'
     current_date_str = date_to_string_translator(current_time(), True)
     user_data = gacha.read_user_data()
-    initialize_user_server_data(user_data, user_id, server)
+    gacha.initialize_user_server_data(user_data, user_id, server)
     total_crystal = user_data[user_id_str][server]['crystals']
-    food_history_info = pandas.read_csv(FOOD_HISTORY_FILE, encoding='utf-8')
+    food_history_info = pandas.read_csv(FOOD_HISTORY_FILE, encoding='utf-8', index_col=0)
     food_menu = food_today()
 
     arg_str = session.current_arg_text.strip()
@@ -71,17 +74,19 @@ async def add_food(session: CommandSession):
         await session.send(message)
         return
 
-    food_crystal = FOOD_INFO.loc[FOOD_INFO['Name'] == arg_str]['Crystal'].values[0]
+    food_crystal = int(FOOD_INFO.loc[FOOD_INFO['Name'] == arg_str]['Crystal'].values[0])
     if food_crystal > total_crystal:
         await session.send(f'要{food_crystal}个水晶，{random.choice(NOT_ENOUGH_CRYSTAL_MESSAGE)}')
         return
 
     # Add food to history.
-    old_menu_name = food_history_info.loc[food_history_info['Date'] == current_date_str]['Name'].values[0]
-    food_history_info.loc[food_history_info['Date'] == current_date_str] = old_menu_name.append(arg_str)
+    old_menu_name = literal_eval(food_history_info.loc[food_history_info['Date'] == current_date_str]['Name'].values[0])
+    old_menu_name.append(arg_str)
+    food_history_info.loc[food_history_info['Date'] == current_date_str, 'Name'] = str(old_menu_name)
 
-    old_menu_add = food_history_info.loc[food_history_info['Date'] == current_date_str]['Add'].values[0]
-    food_history_info.loc[food_history_info['Date'] == current_date_str]['Add'].values[0] = old_menu_add.setdefault(user_id_str,[]).append(arg_str)
+    old_menu_add = literal_eval(food_history_info.loc[food_history_info['Date'] == current_date_str]['Add'].values[0])
+    old_menu_add.setdefault(user_id_str,[]).append(arg_str)
+    food_history_info.loc[food_history_info['Date'] == current_date_str, 'Add'] = str(old_menu_add)
 
     # Use crystals.
     user_data[user_id_str][server]['crystals'] -= food_crystal
@@ -93,18 +98,20 @@ async def add_food(session: CommandSession):
     await session.send(random.choice(ADD_FOOD_SUCCESS_MESSAGE))
 
 
-@on_natural_language(keywords={['给小公主加个']}, only_to_me=False)
+@on_natural_language(keywords={'给小公主加个'}, only_to_me=False)
 async def _(session: NLPSession):
     stripped_msg = session.msg_text.strip()
-    return IntentCommand(90.0, 'add_food', current_arg=stripped_msg[6:])
+    return IntentCommand(90.0, '加餐', current_arg=stripped_msg[6:])
 
 # Generates food for today and store it in the food menu.
 def generateFood(current_date_str: str):
+    sum_food_scores = sum(FOOD_SCORES)
+    normalized_prob = [food_score / sum_food_scores for food_score in FOOD_SCORES]
     food_today = numpy.random.choice(
         FOOD_NAMES,
         size = 5,
         replace = False,
-        p = FOOD_SCORES)
+        p = normalized_prob).tolist()
 
     break_window = bool(random.getrandbits(1))
     break_window_found_out = ((random.random() < 0.2) and break_window)
@@ -118,7 +125,7 @@ def generateFood(current_date_str: str):
     df = pandas.DataFrame([
         [current_date_str, food_today, str(break_window), str(break_window_found_out), {}]
     ])
-    df.to_csv(FOOD_HISTORY_FILE, index=False, mode='a', header=False)
+    df.to_csv(FOOD_HISTORY_FILE, index=True, mode='a', header=False)
 
 # Gets the food menu today.
 def food_today():
@@ -127,7 +134,8 @@ def food_today():
     food_history_info = pandas.read_csv(FOOD_HISTORY_FILE, encoding='utf-8')
     if current_date_str not in food_history_info['Date'].values:
         generateFood(current_date_str)
-    return food_history_info.loc[food_history_info['Date'] == current_date_str]['Name'].values[0]
+    food_history_info = pandas.read_csv(FOOD_HISTORY_FILE, encoding='utf-8')
+    return literal_eval(food_history_info.loc[food_history_info['Date'] == current_date_str]['Name'].values[0])
 
 
 # Gets the window status.
@@ -137,4 +145,5 @@ def window_break_found_out():
     food_history_info = pandas.read_csv(FOOD_HISTORY_FILE, encoding='utf-8')
     if current_date_str not in food_history_info['Date'].values:
         generateFood(current_date_str)
+    food_history_info = pandas.read_csv(FOOD_HISTORY_FILE, encoding='utf-8')
     return food_history_info.loc[food_history_info['Date'] == current_date_str]['WINDOW_BREAK_FOUND_OUT'].values[0]
