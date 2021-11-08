@@ -19,7 +19,7 @@ USER_DATA_FILE = path.join(USER_DATA_DIR, 'users.json')
 
 
 SETU_ALIASES = ('涩图', '瑟图', '不够涩', '不够色', '冲', '冲！')
-USER_SETU_DAILY_LIMIT = 2
+USER_SETU_DAILY_LIMIT = 1
 
 
 
