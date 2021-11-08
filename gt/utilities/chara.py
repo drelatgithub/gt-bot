@@ -19,6 +19,15 @@ CHARA_SERVER_FILE = path.join(config.INTERNAL_DATA_DIR, 'list', 'charaserver.jso
 with open(CHARA_SERVER_FILE, 'r', encoding='utf-8') as f:
     CHARA_SERVER = json.load(f)
 
+CHARA_ALIAS_FILE = path.join(config.INTERNAL_DATA_DIR, 'list', 'charaalias.json')
+with open(CHARA_ALIAS_FILE, 'r', encoding='utf-8') as f:
+    CHARA_ALIAS = json.load(f)
+
+CHARA_ALIAS_ID_MAP = {}
+for chara_id, alias_list in CHARA_ALIAS.items():
+    for alias in alias_list:
+        CHARA_ALIAS_ID_MAP[alias] = chara_id
+
 def get_chara_rank(chara_id):
     return CHARA_INFO[CHARA_INFO.name == chara_id].initstar.values[0]
 

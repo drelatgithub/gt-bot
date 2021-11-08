@@ -31,6 +31,7 @@ RANK_CRYSTAL_MAP = { 1: 1, 2: 8, 3: 50 }
 GACHA_10_ALIASES = ('抽十连', '十连！', '十连抽', '来个十连', '来发十连', '来次十连', '抽个十连', '抽发十连', '抽次十连', '十连扭蛋', '扭蛋十连', '10连', '10连！', '10连抽', '来个10连', '来发10连', '来次10连', '抽个10连', '抽发10连', '抽次10连', '10连扭蛋', '扭蛋10连')
 USER_GACHA_10_DAILY_LIMIT = 2
 USER_GACHA_100_DAILY_LIMIT = 1
+TENCHO_TICKET_COUNT = 300
 
 # Initializations.
 if not path.isfile(USER_DATA_FILE):
@@ -240,6 +241,55 @@ async def gacha_storage(session: CommandSession):
     res_text_comb = '\n'.join(res_text)
 
     res = f"{seg_at}{res_text_comb}"
+    await session.send(res)
+
+@on_command('井', only_to_me=False)
+async def gacha_tencho(session: CommandSession):
+    user_id = session.event['user_id']
+    user_id_str = str(user_id)
+    server = 'cn'
+
+    user_data = read_user_data()
+    initialize_user_server_data(user_data, user_id, server)
+    user_server_data = user_data[user_id_str][server]
+
+    # Create at message.
+    seg_at = MessageSegment.at(user_id)
+
+    res_text = []
+
+    if user_server_data['mileage'] < TENCHO_TICKET_COUNT:
+        res_text.append(f"井票不够{TENCHO_TICKET_COUNT}！")
+    else:
+        arg_str = session.current_arg_text.strip()
+        if arg_str in chara.CHARA_ALIAS_ID_MAP:
+            chara_id = chara.CHARA_ALIAS_ID_MAP[arg_str]
+            chara_rank = chara.get_chara_rank(chara_id)
+            if chara_rank == 3 and chara_id in chara.CHARA_SERVER[server]:
+                if chara_id in user_server_data['charas']:
+                    delta_num_crystals = RANK_CRYSTAL_MAP[chara_rank]
+                    res_text.append(f"重复角色，获得{delta_num_crystals}水晶")
+                    user_server_data['crystals'] += delta_num_crystals
+                else:
+                    res_img = chara.combine_chara_thumbnails_with_rank([chara_id])
+                    seg_img = MessageSegment.image(util.pic2b64(res_img))
+                    res_text.append(f"{seg_img}")
+
+                    res_text.append(f"获得{chara.CHARA_NAME[server][chara_id]}")
+                    user_server_data['charas'].append(chara_id)
+                user_server_data['mileage'] -= TENCHO_TICKET_COUNT
+            else:
+                res_text.append(f"只能兑换国服三星角色！")
+        else:
+            res_text.append("谁？")
+
+    res_text_comb = '\n'.join(res_text)
+
+    res = f"{seg_at}{res_text_comb}"
+
+    # Write user data.
+    save_user_data(user_data)
+
     await session.send(res)
 
 

@@ -8,6 +8,7 @@ from nonebot.log import logger
 
 import config
 from gt.utilities.util import TIME_ZONE, current_time
+from gt.utilities import util
 
 FILE_NAME = os.path.join(config.DATA_DIR, 'group', 'current_list.txt')
 
