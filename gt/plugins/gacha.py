@@ -30,7 +30,7 @@ RANK_CRYSTAL_MAP = { 1: 1, 2: 8, 3: 50 }
 
 GACHA_10_ALIASES = ('抽十连', '十连！', '十连抽', '来个十连', '来发十连', '来次十连', '抽个十连', '抽发十连', '抽次十连', '十连扭蛋', '扭蛋十连', '10连', '10连！', '10连抽', '来个10连', '来发10连', '来次10连', '抽个10连', '抽发10连', '抽次10连', '10连扭蛋', '扭蛋10连')
 USER_GACHA_10_DAILY_LIMIT = 2
-USER_GACHA_100_DAILY_LIMIT = 1
+USER_GACHA_100_DAILY_LIMIT = 0
 TENCHO_TICKET_COUNT = 300
 
 # Initializations.
@@ -158,7 +158,7 @@ async def gacha_100(session: CommandSession):
         user_server_data['100_pull_count'] = 0
 
     if user_server_data['100_pull_count'] >= USER_GACHA_100_DAILY_LIMIT:
-        await session.send('你今天不能再抽一百连了！')
+        await session.send('抽个屁')
         save_user_data(user_data)
         return
     else:
