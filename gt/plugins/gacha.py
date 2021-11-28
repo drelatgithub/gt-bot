@@ -33,6 +33,9 @@ USER_GACHA_10_DAILY_LIMIT = 2
 USER_GACHA_100_DAILY_LIMIT = 0
 TENCHO_TICKET_COUNT = 300
 
+# Specialized data.
+AQI_REFUND_MILEAGE = 200
+
 # Initializations.
 if not path.isfile(USER_DATA_FILE):
     os.makedirs(USER_DATA_DIR, exist_ok=True)
@@ -103,6 +106,12 @@ async def gacha_10(session: CommandSession):
         return
     else:
         user_server_data['10_pull_count'] += 1
+
+    if user_server_data['aqi_curse'] > 0:
+        user_server_data['aqi_curse'] -= 1
+        await session.send('由于啊七的怨念，你的十连被吃了！')
+        save_user_data(user_data)
+        return
 
     res, new_charas, num_crystals, num_mileage_tickets = do_gacha_10(user_data, user_id, server)
     total_num_crystals = user_data[user_id_str][server]['crystals']
@@ -292,6 +301,48 @@ async def gacha_tencho(session: CommandSession):
 
     await session.send(res)
 
+@on_command('退', only_to_me=False)
+async def gacha_tencho(session: CommandSession):
+    user_id = session.event['user_id']
+    user_id_str = str(user_id)
+    server = 'cn'
+
+    user_data = read_user_data()
+    initialize_user_server_data(user_data, user_id, server)
+    user_server_data = user_data[user_id_str][server]
+
+    # Create at message.
+    seg_at = MessageSegment.at(user_id)
+
+    res_text = []
+
+    arg_str = session.current_arg_text.strip()
+    if arg_str in chara.CHARA_ALIAS_ID_MAP:
+        chara_id = chara.CHARA_ALIAS_ID_MAP[arg_str]
+        chara_rank = chara.get_chara_rank(chara_id)
+        if chara_id in user_server_data['charas']:
+            if chara_id == "aqi":
+                user_server_data['mileage'] += AQI_REFUND_MILEAGE
+                user_server_data['aqi_curse'] += 1
+                user_server_data['charas'].remove(chara_id)
+                res_text.append("成功退掉啊七！")
+                res_text.append(f"获得井票{AQI_REFUND_MILEAGE}，啊七的怨念1")
+            else:
+                res_text.append(f"不退")
+        else:
+            res_text.append(f"这个你没，退个鬼")
+    else:
+        res_text.append("谁？")
+
+    res_text_comb = '\n'.join(res_text)
+
+    res = f"{seg_at}{res_text_comb}"
+
+    # Write user data.
+    save_user_data(user_data)
+
+    await session.send(res)
+
 
 def do_gacha_n(pool, n):
     return random.choices(
@@ -389,6 +440,9 @@ def initialize_user_server_data(data, user_id, server):
         user_server_data['crystals'] = 0
     if 'mileage' not in user_server_data:
         user_server_data['mileage'] = 0
+    if 'aqi_curse' not in user_server_data:
+        user_server_data['aqi_curse'] = 0
+
     if '10_pull_count' not in user_server_data:
         user_server_data['10_pull_count'] = 0
     if 'last_10_pull_day' not in user_server_data:
