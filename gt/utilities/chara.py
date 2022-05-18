@@ -4,22 +4,22 @@ from os import path
 import pandas
 from PIL import Image
 
-import config
+from .config import config
 import gt.utilities.resource as resource
 
-CHARA_INFO_FILE = path.join(config.INTERNAL_DATA_DIR, 'list', 'charainfo.csv')
+CHARA_INFO_FILE = path.join(config.internal_data_dir, 'list', 'charainfo.csv')
 CHARA_INFO = pandas.read_csv(CHARA_INFO_FILE, encoding='utf-8')
 
 # CHARA_NAME should be a dict of language -> (dict of chara_id -> chara_name), read from charaname.json
-CHARA_NAME_FILE = path.join(config.INTERNAL_DATA_DIR, 'list', 'charaname.json')
+CHARA_NAME_FILE = path.join(config.internal_data_dir, 'list', 'charaname.json')
 with open(CHARA_NAME_FILE, 'r', encoding='utf-8') as f:
     CHARA_NAME = json.load(f)
 
-CHARA_SERVER_FILE = path.join(config.INTERNAL_DATA_DIR, 'list', 'charaserver.json')
+CHARA_SERVER_FILE = path.join(config.internal_data_dir, 'list', 'charaserver.json')
 with open(CHARA_SERVER_FILE, 'r', encoding='utf-8') as f:
     CHARA_SERVER = json.load(f)
 
-CHARA_ALIAS_FILE = path.join(config.INTERNAL_DATA_DIR, 'list', 'charaalias.json')
+CHARA_ALIAS_FILE = path.join(config.internal_data_dir, 'list', 'charaalias.json')
 with open(CHARA_ALIAS_FILE, 'r', encoding='utf-8') as f:
     CHARA_ALIAS = json.load(f)
 

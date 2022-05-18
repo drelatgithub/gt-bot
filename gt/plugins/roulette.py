@@ -6,11 +6,14 @@ from os import path
 from pathlib import Path
 import random
 
-from nonebot import on_command, CommandSession
+from nonebot.matcher import Matcher
+import nonebot.adapters
+from nonebot import on_command
 from nonebot.log import logger
-from aiocqhttp import MessageSegment
+from nonebot.adapters.onebot.v11 import Message, MessageSegment
+from nonebot.params import Arg, CommandArg, ArgPlainText
 
-import config
+from gt.utilities.config import config
 from gt.utilities import util
 
 ROULETTE_NUM_BULLET_DEFAULT = 6

@@ -10,6 +10,12 @@ python = "^3.8"
 nonebot2 = "^2.0.0-beta.1"
 nonebot-adapter-onebot = "^2.0.0-beta.1"
 nonebot-plugin-setu = "^1.1.1"
+pydantic = "^1.9.0"
+Pillow = "^9.1.1"
+saucenao-api = "^2.4.0"
+pytz = "^2022.1"
+beautifulsoup4 = "^4.11.1"
+pandas = "^1.4.2"
 
 [tool.poetry.dev-dependencies]
 nb-cli = "^0.6.0"

@@ -7,11 +7,11 @@ from urllib.parse import quote
 from bs4 import BeautifulSoup
 from PIL import Image
 
-import config
+from .config import config
 
-PNG_FILE_DIR = path.join(config.DATA_DIR, 'cache', 'chara-png')
-IMAGE_SEND_QUEUE_CACHE_DIR = path.join(config.CQ_DATA_DIR, 'data', 'cache', 'image-send-queue')
-IMAGE_SEND_QUEUE_CACHE_MNT_DIR = path.join(config.CQ_MNT_DATA_DIR, 'data', 'cache', 'image-send-queue')
+PNG_FILE_DIR = path.join(config.data_dir, 'cache', 'chara-png')
+IMAGE_SEND_QUEUE_CACHE_DIR = path.join(config.cq_data_dir, 'data', 'cache', 'image-send-queue')
+IMAGE_SEND_QUEUE_CACHE_MNT_DIR = path.join(config.cq_mnt_data_dir, 'data', 'cache', 'image-send-queue')
 image_send_queue_id = 0
 
 def find_png_in_biliwiki(filename):

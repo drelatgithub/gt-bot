@@ -4,12 +4,16 @@ from os import path
 from pathlib import Path
 import random
 
-from nonebot import on_command, CommandSession
+from nonebot.matcher import Matcher
+import nonebot.adapters
+from nonebot import on_command
 from nonebot.log import logger
-from aiocqhttp import MessageSegment
+from nonebot.adapters.onebot.v11 import Message, MessageSegment
+from nonebot.params import Arg, CommandArg, ArgPlainText
 
-import config
+from gt.utilities.config import config
 from gt.utilities import chara, resource, util
+from gt.utilities.gachautil import *
 
 # User data should be something as follows:
 # {
@@ -23,12 +27,10 @@ from gt.utilities import chara, resource, util
 #         }
 #     }
 # }
-USER_DATA_DIR = path.join(config.DATA_DIR, 'gacha')
-USER_DATA_FILE = path.join(USER_DATA_DIR, 'users.json')
 
 RANK_CRYSTAL_MAP = { 1: 1, 2: 8, 3: 50 }
 
-GACHA_10_ALIASES = ('抽十连', '十连！', '十连抽', '来个十连', '来发十连', '来次十连', '抽个十连', '抽发十连', '抽次十连', '十连扭蛋', '扭蛋十连', '10连', '10连！', '10连抽', '来个10连', '来发10连', '来次10连', '抽个10连', '抽发10连', '抽次10连', '10连扭蛋', '扭蛋10连')
+GACHA_10_ALIASES = {'抽十连', '十连！', '十连抽', '来个十连', '来发十连', '来次十连', '抽个十连', '抽发十连', '抽次十连', '十连扭蛋', '扭蛋十连', '10连', '10连！', '10连抽', '来个10连', '来发10连', '来次10连', '抽个10连', '抽发10连', '抽次10连', '10连扭蛋', '扭蛋10连'}
 USER_GACHA_10_DAILY_LIMIT = 2
 USER_GACHA_100_DAILY_LIMIT = 0
 TENCHO_TICKET_COUNT = 300
@@ -41,7 +43,6 @@ if not path.isfile(USER_DATA_FILE):
     os.makedirs(USER_DATA_DIR, exist_ok=True)
     with open(USER_DATA_FILE, 'w') as f:
         json.dump({}, f)
-
 
 # Pool is a dictionary: name -> weight (probability)
 def create_default_pool(server, fei_factor=0.5, mei_factor=0.5, knight_male_factor=0.5, knight_female_factor=0.5, guarantee_2star=False):
@@ -84,14 +85,14 @@ def create_default_pool(server, fei_factor=0.5, mei_factor=0.5, knight_male_fact
         raise Exception("Invalid server")
 
 
-@on_command('十连', aliases=GACHA_10_ALIASES, only_to_me=False)
-async def gacha_10(session: CommandSession):
-    user_id = session.event['user_id']
-    user_id_str = str(user_id)
+matcher_10pull = on_command('十连', aliases=GACHA_10_ALIASES)
+@matcher_10pull.handle()
+async def gacha_10(matcher: Matcher, event: nonebot.adapters.Event, args: nonebot.adapters.Message=CommandArg()):
+    user_id_str = event.get_user_id()
     server = 'cn'
 
     user_data = read_user_data()
-    initialize_user_server_data(user_data, user_id, server)
+    initialize_user_server_data(user_data, user_id_str, server)
     user_server_data = user_data[user_id_str][server]
 
     # Check if the user has used up daily limit.
@@ -101,19 +102,17 @@ async def gacha_10(session: CommandSession):
         user_server_data['10_pull_count'] = 0
 
     if user_server_data['10_pull_count'] >= USER_GACHA_10_DAILY_LIMIT:
-        await session.send('你今天不能再抽十连了，明天再来！')
         save_user_data(user_data)
-        return
+        await matcher.finish('你今天不能再抽十连了，明天再来！')
     else:
         user_server_data['10_pull_count'] += 1
 
     if user_server_data['aqi_curse'] > 0:
         user_server_data['aqi_curse'] -= 1
-        await session.send('由于啊七的怨念，你的十连被吃了！')
         save_user_data(user_data)
-        return
+        await matcher.finish('由于啊七的怨念，你的十连被吃了！')
 
-    res, new_charas, num_crystals, num_mileage_tickets = do_gacha_10(user_data, user_id, server)
+    res, new_charas, num_crystals, num_mileage_tickets = do_gacha_10(user_data, user_id_str, server)
     total_num_crystals = user_data[user_id_str][server]['crystals']
     total_num_mileage_tickets = user_data[user_id_str][server]['mileage']
 
@@ -123,7 +122,7 @@ async def gacha_10(session: CommandSession):
     rank1_count = sum(1 for r in res if chara.get_chara_rank(r) == 1)
 
     # Create at message.
-    seg_at = MessageSegment.at(user_id)
+    seg_at = MessageSegment.at(user_id_str)
 
     # Create image.
     res_img = chara.combine_chara_thumbnails_with_rank(res)
@@ -148,16 +147,16 @@ async def gacha_10(session: CommandSession):
     # Write user data.
     save_user_data(user_data)
 
-    await session.send(res)
+    await matcher.finish(res)
 
-@on_command('一百连', only_to_me=False)
-async def gacha_100(session: CommandSession):
-    user_id = session.event['user_id']
-    user_id_str = str(user_id)
+matcher_100pull = on_command('一百连')
+@matcher_100pull.handle()
+async def gacha_100(matcher: Matcher, event: nonebot.adapters.Event, args: nonebot.adapters.Message=CommandArg()):
+    user_id_str = event.get_user_id()
     server = 'cn'
 
     user_data = read_user_data()
-    initialize_user_server_data(user_data, user_id, server)
+    initialize_user_server_data(user_data, user_id_str, server)
     user_server_data = user_data[user_id_str][server]
 
     # Check if the user has used up daily limit.
@@ -167,13 +166,12 @@ async def gacha_100(session: CommandSession):
         user_server_data['100_pull_count'] = 0
 
     if user_server_data['100_pull_count'] >= USER_GACHA_100_DAILY_LIMIT:
-        await session.send('抽个屁')
         save_user_data(user_data)
-        return
+        await matcher.finish('抽个屁')
     else:
         user_server_data['100_pull_count'] += 1
 
-    res, new_charas, num_crystals, num_mileage_tickets = do_gacha_100(user_data, user_id, server)
+    res, new_charas, num_crystals, num_mileage_tickets = do_gacha_100(user_data, user_id_str, server)
     total_num_crystals = user_data[user_id_str][server]['crystals']
     total_num_mileage_tickets = user_data[user_id_str][server]['mileage']
 
@@ -183,7 +181,7 @@ async def gacha_100(session: CommandSession):
     rank1_count = sum(1 for r in res if chara.get_chara_rank(r) == 1)
 
     # Create at message.
-    seg_at = MessageSegment.at(user_id)
+    seg_at = MessageSegment.at(user_id_str)
 
     # Create image.
     res_img = chara.combine_chara_thumbnails_with_rank(res)
@@ -208,29 +206,24 @@ async def gacha_100(session: CommandSession):
     # Write user data.
     save_user_data(user_data)
 
-    await session.send(res)
+    await matcher.finish(res)
 
 
-@on_command('抽一井', only_to_me=False)
-async def gacha_10(session: CommandSession):
-    await session.send('不抽')
-
-
-@on_command('仓库', only_to_me=False)
-async def gacha_storage(session: CommandSession):
-    user_id = session.event['user_id']
-    user_id_str = str(user_id)
+matcher_storage = on_command('仓库')
+@matcher_storage.handle()
+async def gacha_storage(matcher: Matcher, event: nonebot.adapters.Event, args: nonebot.adapters.Message=CommandArg()):
+    user_id_str = event.get_user_id()
     server = 'cn'
 
     user_data = read_user_data()
-    initialize_user_server_data(user_data, user_id, server)
+    initialize_user_server_data(user_data, user_id_str, server)
     user_server_data = user_data[user_id_str][server]
     all_charas = user_server_data['charas']
     total_num_crystals = user_server_data['crystals']
     total_num_mileage_tickets = user_server_data['mileage']
 
     # Create at message.
-    seg_at = MessageSegment.at(user_id)
+    seg_at = MessageSegment.at(user_id_str)
 
     res_text = []
 
@@ -250,27 +243,27 @@ async def gacha_storage(session: CommandSession):
     res_text_comb = '\n'.join(res_text)
 
     res = f"{seg_at}{res_text_comb}"
-    await session.send(res)
+    await matcher.finish(res)
 
-@on_command('井', only_to_me=False)
-async def gacha_tencho(session: CommandSession):
-    user_id = session.event['user_id']
-    user_id_str = str(user_id)
+matcher_tencho = on_command('井')
+@matcher_tencho.handle()
+async def gacha_tencho(matcher: Matcher, event: nonebot.adapters.Event, args: nonebot.adapters.Message=CommandArg()):
+    user_id_str = event.get_user_id()
     server = 'cn'
 
     user_data = read_user_data()
-    initialize_user_server_data(user_data, user_id, server)
+    initialize_user_server_data(user_data, user_id_str, server)
     user_server_data = user_data[user_id_str][server]
 
     # Create at message.
-    seg_at = MessageSegment.at(user_id)
+    seg_at = MessageSegment.at(user_id_str)
 
     res_text = []
 
     if user_server_data['mileage'] < TENCHO_TICKET_COUNT:
         res_text.append(f"井票不够{TENCHO_TICKET_COUNT}！")
     else:
-        arg_str = session.current_arg_text.strip()
+        arg_str = args.extract_plain_text().strip()
         if arg_str in chara.CHARA_ALIAS_ID_MAP:
             chara_id = chara.CHARA_ALIAS_ID_MAP[arg_str]
             chara_rank = chara.get_chara_rank(chara_id)
@@ -299,24 +292,24 @@ async def gacha_tencho(session: CommandSession):
     # Write user data.
     save_user_data(user_data)
 
-    await session.send(res)
+    await matcher.finish(res)
 
-@on_command('退', only_to_me=False)
-async def gacha_tencho(session: CommandSession):
-    user_id = session.event['user_id']
-    user_id_str = str(user_id)
+matcher_return = on_command('退')
+@matcher_return.handle()
+async def gacha_return(matcher: Matcher, event: nonebot.adapters.Event, args: nonebot.adapters.Message=CommandArg()):
+    user_id_str = event.get_user_id()
     server = 'cn'
 
     user_data = read_user_data()
-    initialize_user_server_data(user_data, user_id, server)
+    initialize_user_server_data(user_data, user_id_str, server)
     user_server_data = user_data[user_id_str][server]
 
     # Create at message.
-    seg_at = MessageSegment.at(user_id)
+    seg_at = MessageSegment.at(user_id_str)
 
     res_text = []
 
-    arg_str = session.current_arg_text.strip()
+    arg_str = args.extract_plain_text().strip()
     if arg_str in chara.CHARA_ALIAS_ID_MAP:
         chara_id = chara.CHARA_ALIAS_ID_MAP[arg_str]
         chara_rank = chara.get_chara_rank(chara_id)
@@ -341,7 +334,7 @@ async def gacha_tencho(session: CommandSession):
     # Write user data.
     save_user_data(user_data)
 
-    await session.send(res)
+    await matcher.finish(res)
 
 
 def do_gacha_n(pool, n):
@@ -426,41 +419,3 @@ def do_gacha_100(user_data, user_id, server):
     return res, new_charas, num_crystals, num_mileage_tickets
 
 
-def initialize_user_server_data(data, user_id, server):
-    user_id_str = str(user_id)
-    if user_id_str not in data:
-        data[user_id_str] = dict()
-    if server not in data[user_id_str]:
-        data[user_id_str][server] = dict()
-
-    user_server_data = data[user_id_str][server]
-    if 'charas' not in user_server_data:
-        user_server_data['charas'] = []
-    if 'crystals' not in user_server_data:
-        user_server_data['crystals'] = 0
-    if 'mileage' not in user_server_data:
-        user_server_data['mileage'] = 0
-    if 'aqi_curse' not in user_server_data:
-        user_server_data['aqi_curse'] = 0
-
-    if '10_pull_count' not in user_server_data:
-        user_server_data['10_pull_count'] = 0
-    if 'last_10_pull_day' not in user_server_data:
-        user_server_data['last_10_pull_day'] = -1
-    if '100_pull_count' not in user_server_data:
-        user_server_data['100_pull_count'] = 0
-    if 'last_100_pull_day' not in user_server_data:
-        user_server_data['last_100_pull_day'] = -1
-
-    if 'setu_count' not in user_server_data:
-        user_server_data['setu_count'] = 0
-    if 'last_setu_day' not in user_server_data:
-        user_server_data['last_setu_day'] = -1
-
-def read_user_data():
-    with open(USER_DATA_FILE, 'r') as f:
-        return json.load(f)
-
-def save_user_data(data):
-    with open(USER_DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=4)

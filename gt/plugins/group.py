@@ -10,7 +10,7 @@ import config
 from gt.utilities.util import TIME_ZONE, current_time
 from gt.utilities import util
 
-FILE_NAME = os.path.join(config.DATA_DIR, 'group', 'current_list.txt')
+FILE_NAME = os.path.join(config.data_dir, 'group', 'current_list.txt')
 
 # Adds the user into the waitlist. 
 @on_command('group', aliases=('组队', '合作模式', '带我一个', '想打合作了'), only_to_me=False)

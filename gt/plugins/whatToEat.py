@@ -1,7 +1,6 @@
 from ast import literal_eval
-import os, pathlib
+from os import path
 import pandas
-import config
 import random
 import numpy
 import json
@@ -9,24 +8,27 @@ import json
 from datetime import timedelta
 from datetime import datetime
 from pytz import timezone
-from nonebot import on_command, CommandSession
-from os import path
-from nonebot import on_natural_language, NLPSession, IntentCommand
+
+from nonebot.matcher import Matcher
+import nonebot.adapters
+from nonebot import on_command
 from nonebot.log import logger
+from nonebot.adapters.onebot.v11 import Message, MessageSegment
+from nonebot.params import Arg, CommandArg, ArgPlainText
 
 from gt.utilities.util import TIME_ZONE, current_time, Category, string_to_date_translator, date_to_string_translator
-from aiocqhttp import MessageSegment
-from gt.plugins import gacha
+from gt.utilities import gachautil as gacha
+from gt.utilities.config import config
 
 # Food menu file. 
 # Read-only file. 
 # Manully add new food in the file.
-FOOD_FILE = path.join(config.INTERNAL_DATA_DIR, 'list', 'foodMenu.csv')
+FOOD_FILE = path.join(config.internal_data_dir, 'list', 'foodMenu.csv')
 FOOD_INFO = pandas.read_csv(FOOD_FILE, encoding='utf-8')
-FOOD_HISTORY_FILE = path.join(config.DATA_DIR, 'gacha', 'foodHistory.csv')
+FOOD_HISTORY_FILE = path.join(config.data_dir, 'gacha', 'foodHistory.csv')
 FOOD_NAMES = FOOD_INFO['Name'].values
 FOOD_SCORES = FOOD_INFO['Score'].values
-USER_DATA_DIR = path.join(config.DATA_DIR, 'gacha')
+USER_DATA_DIR = path.join(config.data_dir, 'gacha')
 USER_DATA_FILE = path.join(USER_DATA_DIR, 'users.json')
 CAI_JIAO_NAMES = FOOD_INFO.loc[FOOD_INFO['Category'] == Category.BELL_PEPPER.name]['Name'].values
 
