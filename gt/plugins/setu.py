@@ -9,6 +9,7 @@ from nonebot import on_command, CommandSession
 from nonebot.log import logger
 from aiocqhttp import MessageSegment
 from PIL import Image
+from saucenao_api import SauceNao
 
 import config
 from gt.utilities import chara, resource, util
