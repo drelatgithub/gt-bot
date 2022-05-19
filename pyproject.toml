@@ -16,12 +16,13 @@ saucenao-api = "^2.4.0"
 pytz = "^2022.1"
 beautifulsoup4 = "^4.11.1"
 pandas = "^1.4.2"
+nonebot-plugin-hikarisearch = "^0.1.4"
 
 [tool.poetry.dev-dependencies]
 nb-cli = "^0.6.0"
 
 [tool.nonebot]
-plugins = ["nonebot_plugin_setu"]
+plugins = ["nonebot_plugin_setu", "nonebot_plugin_hikarisearch"]
 plugin_dirs = ["gt/plugins"]
 
 [build-system]

@@ -360,6 +360,19 @@ python-versions = ">=3.7.3,<4.0.0"
 nonebot2 = ">=2.0.0-beta.1,<3.0.0"
 
 [[package]]
+name = "nonebot-plugin-hikarisearch"
+version = "0.1.4"
+description = "基于 HikariSearch 的又一个 Nonebot2 搜图插件"
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.dependencies]
+httpx = ">=0.19.0"
+nonebot-adapter-onebot = ">=2.0.0-beta.1,<3.0.0"
+nonebot2 = ">=2.0.0-beta.1,<3.0.0"
+
+[[package]]
 name = "nonebot-plugin-setu"
 version = "1.1.1"
 description = "基于lolicon api的涩图插件"
@@ -785,7 +798,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "a143cd2e4664bd5d72d1782d926b155e329997fa7530a50e05003263a2f5d07a"
+content-hash = "0b3f8ecc05dfc78177ff30f4a57aa2195baf9cd6f3511169ab46235276052c54"
 
 [metadata.files]
 aiohttp = [
@@ -1061,6 +1074,10 @@ nb-cli = [
 nonebot-adapter-onebot = [
     {file = "nonebot-adapter-onebot-2.0.0b1.tar.gz", hash = "sha256:9dad770371e577fead096ceacacc43b3ef304a8e238e8fff1163eefc4e947a75"},
     {file = "nonebot_adapter_onebot-2.0.0b1-py3-none-any.whl", hash = "sha256:ca1375de1dd503a5ab20440445026195b587e05a2b18ae8df9b6ab17c9e857b5"},
+]
+nonebot-plugin-hikarisearch = [
+    {file = "nonebot_plugin_hikarisearch-0.1.4-py3-none-any.whl", hash = "sha256:55315287fe1926985e4e56efbfccf4da8aa4c14264f6bcbf88d35f2654db8b73"},
+    {file = "nonebot_plugin_hikarisearch-0.1.4.tar.gz", hash = "sha256:123e6e50fd3084a806300136ef132864a6b7be0856b10348a6ec364c0511a180"},
 ]
 nonebot-plugin-setu = [
     {file = "nonebot_plugin_setu-1.1.1-py3-none-any.whl", hash = "sha256:64efcc4eaa8636295ca858722ea0e08725033dd8d51868d9ac50d54ff5cd3eee"},
