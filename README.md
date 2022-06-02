@@ -1,12 +1,11 @@
 # gt-bot
 
-## How to start
+## Edit and deploy
 
-1. generate project using `nb create` .
-2. create your plugin using `nb plugin create` .
-3. writing your plugins under `gt/plugins` folder.
-4. run your bot using `nb run` .
+Ref: <https://v2.nonebot.dev/docs/>
 
-## Documentation
+Native plugins are located in `gt/plugins` directory.
 
-See [Docs](https://v2.nonebot.dev/)
+Use `venv` to set up virtual environment.
+Use `poetry` to manage dependencies and plugins.
+Use `docker-compose up --build -d` to deploy.
